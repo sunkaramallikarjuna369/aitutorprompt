@@ -7,6 +7,7 @@ from .rwal.router import router as rwal_router
 from .quiz.router import router as quiz_router
 from .progress.router import router as progress_router
 from .recommendation.router import router as recommendation_router
+from .pdf_ingestion.router import router as pdf_ingestion_router
 
 __all__ = [
     "auth_router",
@@ -17,5 +18,6 @@ __all__ = [
     "rwal_router",
     "quiz_router",
     "progress_router",
-    "recommendation_router"
+    "recommendation_router",
+    "pdf_ingestion_router"
 ]

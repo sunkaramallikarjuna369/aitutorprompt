@@ -14,7 +14,8 @@ from .services import (
     rwal_router,
     quiz_router,
     progress_router,
-    recommendation_router
+    recommendation_router,
+    pdf_ingestion_router
 )
 
 app = FastAPI(
@@ -43,6 +44,7 @@ app.include_router(rwal_router)
 app.include_router(quiz_router)
 app.include_router(progress_router)
 app.include_router(recommendation_router)
+app.include_router(pdf_ingestion_router)
 
 @app.get("/healthz")
 async def healthz():
@@ -63,7 +65,8 @@ async def api_root():
             {"name": "Real-World Applications (SGT)", "prefix": "/rwal"},
             {"name": "Quiz & Assessment", "prefix": "/quiz"},
             {"name": "Progress Tracking", "prefix": "/progress"},
-            {"name": "Recommendations", "prefix": "/recommendations"}
+            {"name": "Recommendations", "prefix": "/recommendations"},
+            {"name": "PDF Ingestion (CBSE Content)", "prefix": "/pdf-ingestion"}
         ]
     }
 

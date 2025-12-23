@@ -605,3 +605,145 @@ export interface LearningPath {
 export interface ClassHierarchy extends ClassData {
   subjects_data: (Subject & { chapters_data: (Chapter & { topics_data: Topic[] })[] })[];
 }
+
+// PDF Ingestion Types
+export interface PDFMetadata {
+  pdf_id: string;
+  filename: string;
+  class_level: string;
+  subject: string;
+  chapter: string;
+  source_url: string | null;
+  status: 'uploaded' | 'processing' | 'processed' | 'failed';
+  uploaded_at: string;
+  processed_at: string | null;
+  file_size_bytes: number;
+  page_count: number | null;
+  extracted_topics: string[];
+  storage_path: string;
+  gcs_path: string;
+}
+
+export interface PDFUploadResponse {
+  pdf_id: string;
+  message: string;
+  metadata: PDFMetadata;
+}
+
+export interface PDFTopic {
+  name: string;
+  content: string;
+  learning_objectives: string[];
+}
+
+export interface PDFTopicsResponse {
+  pdf_id: string;
+  chapter: string;
+  topics: PDFTopic[];
+}
+
+export interface PDFProcessResponse {
+  message: string;
+  pdf_id: string;
+  page_count: number;
+  topics_found: number;
+  topics: { name: string; content_preview: string }[];
+}
+
+export interface CachedVisualization {
+  pdf_id: string;
+  topic_name: string;
+  student_mode: StudentMode;
+  visual_config: AIVisualConfig;
+  generated_at: string;
+  cache_key: string;
+  gcs_cache_path: string;
+}
+
+export interface NCERTInfo {
+  source: string;
+  website: string;
+  instructions: string[];
+  example_workflow: Record<string, string>;
+  supported_classes: string[];
+  supported_subjects: string[];
+  note: string;
+}
+
+// PDF Ingestion API
+async function uploadPdfFile(
+  file: File,
+  classLevel: string,
+  subject: string,
+  chapter: string
+): Promise<PDFUploadResponse> {
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('class_level', classLevel);
+  formData.append('subject', subject);
+  formData.append('chapter', chapter);
+
+  const headers: Record<string, string> = {};
+  if (BASIC_AUTH) {
+    headers['Authorization'] = `Basic ${BASIC_AUTH}`;
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/pdf-ingestion/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new Error(error.detail || 'Upload failed');
+  }
+
+  return response.json();
+}
+
+export const pdfIngestionApi = {
+  uploadPdf: uploadPdfFile,
+
+  downloadFromUrl: (data: { url: string; class_level: string; subject: string; chapter: string }) =>
+    apiRequest<PDFUploadResponse>('/pdf-ingestion/from-url', { method: 'POST', body: data }),
+
+  processPdf: (pdfId: string) =>
+    apiRequest<PDFProcessResponse>(`/pdf-ingestion/process/${pdfId}`, { method: 'POST' }),
+
+  listPdfs: () =>
+    apiRequest<PDFMetadata[]>('/pdf-ingestion/pdfs'),
+
+  getPdf: (pdfId: string) =>
+    apiRequest<PDFMetadata>(`/pdf-ingestion/pdfs/${pdfId}`),
+
+  getPdfTopics: (pdfId: string) =>
+    apiRequest<PDFTopicsResponse>(`/pdf-ingestion/pdfs/${pdfId}/topics`),
+
+  getPdfVisualizations: (pdfId: string) =>
+    apiRequest<{ pdf_id: string; visualizations: CachedVisualization[] }>(`/pdf-ingestion/pdfs/${pdfId}/visualizations`),
+
+  deletePdf: (pdfId: string) =>
+    apiRequest<{ message: string }>(`/pdf-ingestion/pdfs/${pdfId}`, { method: 'DELETE' }),
+
+  generateVisualization: (data: { pdf_id: string; topic_name: string; student_mode: StudentMode }) =>
+    apiRequest<CachedVisualization>('/pdf-ingestion/generate-visualization', { method: 'POST', body: data }),
+
+  generateAllVisualizations: (pdfId: string) =>
+    apiRequest<{
+      pdf_id: string;
+      total_topics: number;
+      total_modes: number;
+      generated: number;
+      cached: number;
+      errors: number;
+      results: { topic: string; mode: StudentMode; status: string }[];
+    }>(`/pdf-ingestion/generate-all-visualizations/${pdfId}`, { method: 'POST' }),
+
+  getNCERTInfo: () =>
+    apiRequest<NCERTInfo>('/pdf-ingestion/ncert-info'),
+};

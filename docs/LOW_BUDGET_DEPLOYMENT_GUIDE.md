@@ -394,12 +394,119 @@ gcloud projects describe cbse-learning-platform
 
 ---
 
+## PDF Ingestion Pipeline
+
+The platform includes a PDF ingestion pipeline for processing NCERT textbooks and generating AI-driven visualizations.
+
+### GCS Naming Strategy
+
+PDFs and visualizations are organized using a hierarchical naming convention:
+
+```
+gs://your-bucket/
+  cbse/
+    class-10/
+      mathematics/
+        quadratic-equations/
+          chapter.pdf                    # Source PDF
+          visualizations/
+            standard-form/
+              dull.json                  # Visualization for Dull mode
+              average.json               # Visualization for Average mode
+              clever.json                # Visualization for Clever mode
+            discriminant/
+              dull.json
+              average.json
+              clever.json
+    class-9/
+      science/
+        ...
+```
+
+This structure allows:
+- Easy browsing by class level
+- Organization by subject within each class
+- Chapter-specific content grouping
+- Cached visualizations stored alongside source PDFs
+
+### PDF Ingestion Workflow
+
+1. **Upload PDF** (via file upload or URL):
+   ```bash
+   # Upload a PDF file
+   curl -X POST "https://your-app.run.app/pdf-ingestion/upload" \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -F "file=@quadratic-equations.pdf" \
+     -F "class_level=10" \
+     -F "subject=Mathematics" \
+     -F "chapter=Quadratic Equations"
+   
+   # Or download from NCERT URL
+   curl -X POST "https://your-app.run.app/pdf-ingestion/from-url" \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "url": "https://ncert.nic.in/textbook/pdf/jemh104.pdf",
+       "class_level": "10",
+       "subject": "Mathematics",
+       "chapter": "Quadratic Equations"
+     }'
+   ```
+
+2. **Process PDF** (extract text and topics):
+   ```bash
+   curl -X POST "https://your-app.run.app/pdf-ingestion/process/{pdf_id}" \
+     -H "Authorization: Bearer YOUR_TOKEN"
+   ```
+
+3. **Generate Visualizations** (for each student mode):
+   ```bash
+   # Generate for a specific topic and mode
+   curl -X POST "https://your-app.run.app/pdf-ingestion/generate-visualization" \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "pdf_id": "abc123",
+       "topic_name": "Standard Form",
+       "student_mode": "dull"
+     }'
+   
+   # Or batch generate all visualizations
+   curl -X POST "https://your-app.run.app/pdf-ingestion/generate-all-visualizations/{pdf_id}" \
+     -H "Authorization: Bearer YOUR_TOKEN"
+   ```
+
+### Cost Optimization for PDF Pipeline
+
+The PDF ingestion pipeline is designed to minimize AI costs:
+
+1. **Caching**: All generated visualizations are cached. Subsequent requests return cached results without calling Gemini.
+
+2. **Batch Processing**: Use `generate-all-visualizations` to pre-generate all visualizations once, then serve from cache.
+
+3. **Mock Provider**: For development/testing, use `AI_PROVIDER=mock` to avoid any Gemini costs.
+
+4. **GCS Storage**: In production, cached visualizations are stored in GCS for persistence across restarts.
+
+### NCERT Textbook Sources
+
+NCERT textbooks can be downloaded from: https://ncert.nic.in/textbook.php
+
+Example workflow:
+1. Visit the NCERT website
+2. Select Class, Subject, and Chapter
+3. Copy the PDF download link
+4. Use the `/pdf-ingestion/from-url` endpoint with the link
+
+---
+
 ## Next Steps
 
 1. **Test Your Deployment**: Open the Cloud Run URL and try registering/logging in
 2. **Share with Students**: Give them the URL to access the platform
 3. **Monitor Usage**: Check Cloud Console for usage metrics
 4. **Iterate**: Add features based on feedback
+5. **Upload NCERT PDFs**: Use the PDF ingestion pipeline to add chapter content
 
 ---
 
