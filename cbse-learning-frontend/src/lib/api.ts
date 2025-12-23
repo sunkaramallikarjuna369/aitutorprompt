@@ -1,4 +1,22 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// Extract credentials from URL if present (for tunnel URLs with basic auth)
+function parseApiUrl(url: string): { baseUrl: string; basicAuth: string | null } {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.username && urlObj.password) {
+      const basicAuth = btoa(`${urlObj.username}:${urlObj.password}`);
+      urlObj.username = '';
+      urlObj.password = '';
+      return { baseUrl: urlObj.toString().replace(/\/$/, ''), basicAuth };
+    }
+    return { baseUrl: url, basicAuth: null };
+  } catch {
+    return { baseUrl: url, basicAuth: null };
+  }
+}
+
+const { baseUrl: API_URL, basicAuth: BASIC_AUTH } = parseApiUrl(RAW_API_URL);
 
 interface ApiOptions {
   method?: string;
@@ -14,6 +32,12 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
     ...options.headers,
   };
   
+  // Add Basic Auth header if tunnel credentials are present
+  if (BASIC_AUTH) {
+    headers['Authorization'] = `Basic ${BASIC_AUTH}`;
+  }
+  
+  // JWT token takes precedence over Basic Auth for authenticated requests
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
