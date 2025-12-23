@@ -1,0 +1,18 @@
+# CBSE Learning Platform - Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Database configuration
+db_tier     = "db-f1-micro"  # Use db-g1-small or higher for production
+db_password = "your-secure-database-password"
+
+# JWT configuration
+jwt_secret_key = "your-secure-jwt-secret-key-at-least-32-characters"
+
+# Firestore location (must match region)
+firestore_location = "us-central"
+
+# Enable deletion protection for production
+deletion_protection = false  # Set to true for production

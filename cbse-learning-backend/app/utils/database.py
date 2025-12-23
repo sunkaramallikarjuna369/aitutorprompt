@@ -999,7 +999,7 @@ class InMemoryDatabase:
         
         self.visual_configs = configs
     
-    def create_user(self, email: str, password_hash: str, name: str, class_id: str, school: Optional[str] = None) -> Dict:
+    def create_user(self, email: str, password_hash: str, name: str, class_id: str, school: Optional[str] = None, student_mode: str = "average") -> Dict:
         user_id = str(uuid.uuid4())
         user = {
             "id": user_id,
@@ -1008,6 +1008,7 @@ class InMemoryDatabase:
             "class_id": class_id,
             "school": school,
             "learning_style": "visual",
+            "student_mode": student_mode,
             "pace": "normal",
             "role": "student",
             "created_at": datetime.utcnow().isoformat()
@@ -1148,3 +1149,6 @@ class InMemoryDatabase:
         return [self.visual_configs[ref] for ref in config_refs if ref in self.visual_configs]
 
 db = InMemoryDatabase()
+
+topics_db = db.topics
+users_db = db.users

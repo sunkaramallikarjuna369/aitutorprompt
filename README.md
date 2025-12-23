@@ -1,14 +1,21 @@
 # CBSE Learning Platform
 
-An interactive learning platform for CBSE students featuring adaptive quizzes, real-world applications based on Situated Cognition Theory (SGT), and comprehensive progress tracking.
+An interactive learning platform for CBSE students featuring AI-driven adaptive visualizations, real-world applications based on Situated Cognition Theory (SGT), and comprehensive progress tracking with Bloom's taxonomy integration.
 
 ## Overview
 
 This platform is designed to help Class 10 Mathematics students learn Quadratic Equations through an engaging, interactive experience. The architecture is built to scale to all CBSE classes, subjects, and chapters.
 
+Key features include:
+- AI-driven visualization orchestration with student persona modes (Dull/Average/Clever)
+- Vertex AI (Gemini) integration for content generation
+- Situated Cognition Theory (SGT) implementation for real-world learning
+- Adaptive quizzes based on Bloom's taxonomy
+- Comprehensive progress tracking and recommendations
+
 ## Architecture
 
-The platform follows a microservices architecture with 9 independent services:
+The platform follows a microservices architecture with 10 independent services:
 
 ### Backend Services
 
@@ -17,17 +24,77 @@ The platform follows a microservices architecture with 9 independent services:
 3. **Curriculum Service** - CBSE hierarchy management (Board -> Class -> Subject -> Chapter -> Topic)
 4. **Content Service** - Learning content delivery with visual configs and SGT flow
 5. **Visualization Service** - Dynamic interactive components for quadratic equations
-6. **RWAL Service** - Real-World Applications & Situated Cognition Theory implementation
-7. **Quiz Service** - Questions, attempts, adaptive difficulty based on Bloom's taxonomy
-8. **Progress Service** - Track completion, scores, time-on-task, Bloom level performance
-9. **Recommendation Service** - Next steps, review plans, spaced repetition scheduling
+6. **Visualization Orchestrator** - AI-driven visualization configuration with student persona modes
+7. **RWAL Service** - Real-World Applications & Situated Cognition Theory implementation
+8. **Quiz Service** - Questions, attempts, adaptive difficulty based on Bloom's taxonomy
+9. **Progress Service** - Track completion, scores, time-on-task, Bloom level performance
+10. **Recommendation Service** - Next steps, review plans, spaced repetition scheduling
 
 ### Frontend
 
 - React + TypeScript SPA with Tailwind CSS
 - Interactive quadratic equation visualizer with real-time graphing
+- Student mode selector for personalized learning experience
 - Adaptive quiz interface with immediate feedback
 - Progress tracking and learning reports
+
+## AI-Driven Visualization Orchestrator
+
+The platform includes an AI-driven visualization orchestrator that generates personalized visual configurations based on student learning modes. This service uses Vertex AI (Gemini) in production or a mock provider for local development.
+
+### Student Persona Modes
+
+The platform supports three learning modes that adapt the visualization and content delivery:
+
+| Mode | Target Audience | Characteristics |
+|------|-----------------|-----------------|
+| **Dull** | Students struggling with math | Simplified visuals, high scaffolding, real-world metaphors, slow animations |
+| **Average** | Students with foundational understanding | Balanced procedural visualizations, standard color coding, medium scaffolding |
+| **Clever** | Advanced students seeking challenges | Complex abstract visualizations, sandbox mode, minimal scaffolding |
+
+### AI Prompt Templates
+
+The visualization orchestrator uses specific prompts for each student mode:
+
+#### Dull Mode Prompt
+```
+Generate a simplified, high-scaffolding visual configuration for a 14-year-old struggling 
+with math. Use concrete real-world metaphors (e.g., a ball's path). Slow down animation 
+speeds and use bright, high-contrast visual cues for the X and Y axis.
+```
+
+#### Average Mode Prompt
+```
+Generate a balanced procedural visualization. Focus on the relationship between the 
+quadratic formula variables and the parabola's movement. Use standard mathematical 
+color coding.
+```
+
+#### Clever Mode Prompt
+```
+Generate a complex, abstract visualization. Include the discriminant's impact on complex 
+roots and 3D transformations. Provide a 'sandbox' mode where the student can stress-test 
+the limits of the equation.
+```
+
+### Visual Configuration Output
+
+The AI generates a JSON configuration that controls:
+- Animation speed, easing, and duration
+- Axis colors and emphasis levels
+- Color schemes (primary, secondary, background, accent)
+- Scaffolding level (hints, step numbers, key point highlighting)
+- Interactivity options (sandbox mode, sliders, zoom, drag)
+- Advanced features (discriminant, complex roots, 3D transformations)
+- Pedagogical notes for the student
+
+### API Endpoints
+
+- `POST /visualization-orchestrator/topics/{topicId}/config` - Generate visual config for a topic
+- `GET /visualization-orchestrator/topics/{topicId}/config/preview` - Preview all three mode configs
+- `POST /visualization-orchestrator/topics/{topicId}/worked-example` - Generate worked example
+- `GET /visualization-orchestrator/prompt-templates` - Get all prompt templates
+- `GET /visualization-orchestrator/modes` - Get available learning modes
 
 ## Situated Cognition Theory (SGT) Implementation
 
@@ -190,6 +257,65 @@ The platform includes comprehensive seed data for:
 - 20+ questions across all Bloom levels
 - Multiple RWAL scenarios with real-world applications
 - Interactive visualization configs for parabola exploration
+
+## GCP Deployment
+
+The platform includes Terraform and Cloud Build configurations for one-click deployment to Google Cloud Platform.
+
+### Prerequisites
+
+- GCP Project with billing enabled
+- Terraform 1.0+
+- gcloud CLI configured
+
+### Infrastructure Setup
+
+```bash
+cd infra/terraform
+
+# Copy and configure variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values
+
+# Initialize and apply
+terraform init
+terraform plan
+terraform apply
+```
+
+This creates:
+- Cloud Run services for backend
+- Cloud SQL PostgreSQL instance
+- Firestore database (Native mode)
+- Redis instance for caching
+- Pub/Sub topics for async events
+- Cloud Storage buckets for media and frontend
+- Artifact Registry for container images
+- Secret Manager for sensitive configuration
+
+### CI/CD with Cloud Build
+
+The `infra/cloudbuild/cloudbuild.yaml` file defines the CI/CD pipeline:
+
+1. Run backend tests
+2. Build and test frontend
+3. Build Docker image for backend
+4. Push to Artifact Registry
+5. Deploy backend to Cloud Run
+6. Deploy frontend to Cloud Storage
+
+To trigger a build:
+
+```bash
+gcloud builds submit --config=infra/cloudbuild/cloudbuild.yaml
+```
+
+### Environment Variables
+
+For Vertex AI integration, set:
+- `AI_PROVIDER=vertex` (default is `mock` for local development)
+- `VERTEX_AI_PROJECT=your-project-id`
+- `VERTEX_AI_LOCATION=us-central1`
 
 ## License
 
