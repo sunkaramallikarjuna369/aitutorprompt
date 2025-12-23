@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+import os
+from pathlib import Path
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from .config import settings
 from .services import (
     auth_router,
@@ -44,21 +48,45 @@ app.include_router(recommendation_router)
 async def healthz():
     return {"status": "ok"}
 
-@app.get("/")
-async def root():
+@app.get("/api")
+async def api_root():
     return {
         "message": "Welcome to CBSE Learning Platform API",
         "version": settings.APP_VERSION,
         "docs": "/docs",
-                "services": [
-                    {"name": "Authentication", "prefix": "/auth"},
-                    {"name": "Curriculum", "prefix": "/curriculum"},
-                    {"name": "Content", "prefix": "/content"},
-                    {"name": "Visualization", "prefix": "/visualization"},
-                    {"name": "Visualization Orchestrator (AI-Driven)", "prefix": "/visualization-orchestrator"},
-                    {"name": "Real-World Applications (SGT)", "prefix": "/rwal"},
-                    {"name": "Quiz & Assessment", "prefix": "/quiz"},
-                    {"name": "Progress Tracking", "prefix": "/progress"},
-                    {"name": "Recommendations", "prefix": "/recommendations"}
-                ]
+        "services": [
+            {"name": "Authentication", "prefix": "/auth"},
+            {"name": "Curriculum", "prefix": "/curriculum"},
+            {"name": "Content", "prefix": "/content"},
+            {"name": "Visualization", "prefix": "/visualization"},
+            {"name": "Visualization Orchestrator (AI-Driven)", "prefix": "/visualization-orchestrator"},
+            {"name": "Real-World Applications (SGT)", "prefix": "/rwal"},
+            {"name": "Quiz & Assessment", "prefix": "/quiz"},
+            {"name": "Progress Tracking", "prefix": "/progress"},
+            {"name": "Recommendations", "prefix": "/recommendations"}
+        ]
     }
+
+# Serve frontend static files if they exist
+FRONTEND_DIR = Path(__file__).parent.parent.parent / "cbse-learning-frontend" / "dist"
+
+if FRONTEND_DIR.exists():
+    # Mount static assets
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(request: Request, full_path: str):
+        # Serve index.html for all non-API routes (SPA routing)
+        file_path = FRONTEND_DIR / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(FRONTEND_DIR / "index.html")
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Welcome to CBSE Learning Platform API",
+            "version": settings.APP_VERSION,
+            "docs": "/docs",
+            "note": "Frontend not found. Visit /docs for API documentation."
+        }
