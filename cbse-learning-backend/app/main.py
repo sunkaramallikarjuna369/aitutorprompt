@@ -15,7 +15,9 @@ from .services import (
     quiz_router,
     progress_router,
     recommendation_router,
-    pdf_ingestion_router
+    pdf_ingestion_router,
+    rag_agent_router,
+    firebase_users_router
 )
 
 app = FastAPI(
@@ -45,6 +47,8 @@ app.include_router(quiz_router)
 app.include_router(progress_router)
 app.include_router(recommendation_router)
 app.include_router(pdf_ingestion_router)
+app.include_router(rag_agent_router)
+app.include_router(firebase_users_router)
 
 @app.get("/healthz")
 async def healthz():
@@ -66,7 +70,9 @@ async def api_root():
             {"name": "Quiz & Assessment", "prefix": "/quiz"},
             {"name": "Progress Tracking", "prefix": "/progress"},
             {"name": "Recommendations", "prefix": "/recommendations"},
-            {"name": "PDF Ingestion (CBSE Content)", "prefix": "/pdf-ingestion"}
+            {"name": "PDF Ingestion (CBSE Content)", "prefix": "/pdf-ingestion"},
+            {"name": "RAG Agent (PDF Q&A + Visualization)", "prefix": "/rag-agent"},
+            {"name": "Firebase User Management", "prefix": "/firebase-users"}
         ]
     }
 

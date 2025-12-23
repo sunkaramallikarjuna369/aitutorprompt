@@ -2,6 +2,23 @@
 
 This guide is designed for complete GCP beginners who want to deploy the CBSE Learning Platform with a budget of approximately 1000 INR (~$12 USD) per month. We'll use an incremental approach, deploying one component at a time.
 
+## Table of Contents
+
+1. [Budget Strategy](#budget-strategy)
+2. [Prerequisites](#prerequisites)
+3. [Phase 1: Google Account & GCP Setup](#phase-1-gcp-account-setup-day-1)
+4. [Phase 2: Prepare Your Code](#phase-2-prepare-your-code-day-1-2)
+5. [Phase 3: Deploy to Cloud Run](#phase-3-deploy-backend-to-cloud-run-day-2-3)
+6. [Phase 4: Firebase User Management](#phase-4-firebase-user-management-free)
+7. [Phase 5: Add Persistence with Firestore](#phase-5-add-persistence-with-firestore-day-3-4)
+8. [Phase 6: CI/CD with Cloud Build](#phase-6-set-up-cicd-with-cloud-build-optional-day-4-5)
+9. [PDF Ingestion Pipeline](#pdf-ingestion-pipeline)
+10. [RAG Agent (PDF Q&A)](#rag-agent-pdf-qa)
+11. [Cost Breakdown](#cost-breakdown)
+12. [Troubleshooting](#troubleshooting)
+
+---
+
 ## Budget Strategy
 
 With 1000 INR/month, we'll leverage GCP's generous free tier:
@@ -210,11 +227,106 @@ Service URL: https://cbse-learning-app-xxxxx-el.a.run.app
 
 ---
 
-## Phase 4: Add Persistence with Firestore (Day 3-4)
+## Phase 4: Firebase User Management (FREE)
+
+Firebase Authentication provides a free tier with 50,000 monthly active users - perfect for our low-budget deployment!
+
+### Step 4.1: Create Firebase Project
+
+1. Go to https://console.firebase.google.com/
+2. Click "Create a project" (or "Add project")
+3. Enter project name: `cbse-learning-platform`
+4. **Important**: Select "Use existing Google Cloud project" and choose your GCP project
+5. Disable Google Analytics (optional, saves complexity)
+6. Click "Create project"
+
+### Step 4.2: Enable Authentication
+
+1. In Firebase Console, click "Authentication" in the left sidebar
+2. Click "Get started"
+3. Go to "Sign-in method" tab
+4. Enable the following providers:
+   - **Email/Password**: Click, toggle "Enable", click "Save"
+   - **Google** (optional): Click, toggle "Enable", add your email as support email, click "Save"
+
+### Step 4.3: Download Service Account Key
+
+1. In Firebase Console, click the gear icon (Settings) > "Project settings"
+2. Go to "Service accounts" tab
+3. Click "Generate new private key"
+4. Click "Generate key" to download the JSON file
+5. **Important**: Keep this file secure! Never commit it to git.
+
+### Step 4.4: Configure Backend for Firebase
+
+```bash
+# Set environment variable for Firebase credentials
+# Option 1: Set path to credentials file
+export FIREBASE_CREDENTIALS_PATH="/path/to/your-firebase-credentials.json"
+
+# Option 2: On GCP Cloud Run, use Application Default Credentials (automatic)
+# No configuration needed - Firebase will use GCP's built-in credentials
+```
+
+### Step 4.5: Deploy with Firebase Enabled
+
+```bash
+# For Cloud Run deployment, upload credentials as a secret
+gcloud secrets create firebase-credentials \
+  --data-file=/path/to/your-firebase-credentials.json
+
+# Grant Cloud Run access to the secret
+gcloud secrets add-iam-policy-binding firebase-credentials \
+  --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+# Deploy with Firebase credentials
+gcloud run deploy cbse-learning-app \
+  --image=asia-south1-docker.pkg.dev/cbse-learning-platform/cbse-app/backend:v1 \
+  --platform=managed \
+  --region=asia-south1 \
+  --allow-unauthenticated \
+  --memory=512Mi \
+  --cpu=1 \
+  --min-instances=0 \
+  --max-instances=2 \
+  --set-env-vars="AI_PROVIDER=mock,APP_ENV=production" \
+  --set-secrets="FIREBASE_CREDENTIALS_PATH=firebase-credentials:latest"
+```
+
+### Firebase API Endpoints
+
+The backend provides these Firebase user management endpoints:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/firebase-users/status` | GET | Check if Firebase is configured |
+| `/firebase-users/create` | POST | Create a new user |
+| `/firebase-users/me` | GET | Get current user info |
+| `/firebase-users/{uid}` | GET | Get user by UID |
+| `/firebase-users/{uid}` | PUT | Update user |
+| `/firebase-users/{uid}` | DELETE | Delete user |
+| `/firebase-users/password-reset` | POST | Generate password reset link |
+| `/firebase-users/set-student-mode` | POST | Set student learning mode |
+| `/firebase-users/set-class` | POST | Set student class |
+
+### Firebase Free Tier Limits
+
+| Feature | Free Limit |
+|---------|------------|
+| Monthly Active Users | 50,000 |
+| Email/Password Auth | Unlimited |
+| Google Sign-In | Unlimited |
+| Phone Auth | 10,000 SMS/month |
+| Custom Claims | 1,000 bytes per user |
+
+---
+
+## Phase 5: Add Persistence with Firestore (Day 3-4)
 
 Currently, the app uses in-memory storage (data resets on restart). Let's add Firestore for persistence.
 
-### Step 4.1: Create Firestore Database
+### Step 5.1: Create Firestore Database
 
 1. Go to https://console.cloud.google.com/firestore
 2. Click "Create Database"
@@ -222,17 +334,17 @@ Currently, the app uses in-memory storage (data resets on restart). Let's add Fi
 4. Choose location: `asia-south1` (Mumbai)
 5. Click "Create Database"
 
-### Step 4.2: Update Backend to Use Firestore
+### Step 5.2: Update Backend to Use Firestore
 
 This requires code changes. For now, the in-memory database works fine for demos. We'll add Firestore integration in a future update.
 
 ---
 
-## Phase 5: Set Up CI/CD with Cloud Build (Optional, Day 4-5)
+## Phase 6: Set Up CI/CD with Cloud Build (Optional, Day 4-5)
 
 Automate deployments when you push code changes.
 
-### Step 5.1: Connect GitHub Repository
+### Step 6.1: Connect GitHub Repository
 
 1. Go to https://console.cloud.google.com/cloud-build/triggers
 2. Click "Connect Repository"
@@ -240,7 +352,7 @@ Automate deployments when you push code changes.
 4. Select your repository: `sunkaramallikarjuna369/aitutorprompt`
 5. Click "Connect"
 
-### Step 5.2: Create Build Trigger
+### Step 6.2: Create Build Trigger
 
 1. Click "Create Trigger"
 2. Configure:
@@ -497,6 +609,124 @@ Example workflow:
 2. Select Class, Subject, and Chapter
 3. Copy the PDF download link
 4. Use the `/pdf-ingestion/from-url` endpoint with the link
+
+---
+
+## RAG Agent (PDF Q&A)
+
+The RAG (Retrieval-Augmented Generation) Agent allows students to ask questions about PDF content and receive answers with visualizations adapted to their learning mode.
+
+### How It Works
+
+1. **PDF Indexing**: When you upload a PDF, the system extracts text and creates a searchable index using SQLite FTS5 (Full-Text Search)
+2. **Question Classification**: Questions are automatically classified (factual, conceptual, procedural, application, exercise)
+3. **Chunk Retrieval**: Relevant sections from the PDF are retrieved using BM25 ranking
+4. **Answer Generation**: AI generates answers based on retrieved content and student mode
+5. **Visualization Generation**: For complex concepts, AI generates visual explanations
+
+### Cost Optimization
+
+The RAG Agent is designed for low-budget operation:
+
+- **SQLite FTS5**: Free, built-in full-text search (no expensive embedding APIs)
+- **Rule-based Classification**: No AI calls for question classification
+- **Multi-level Caching**: Answers and visualizations are cached to minimize AI costs
+- **Mock Provider**: Use `AI_PROVIDER=mock` for development/testing (zero cost)
+
+### RAG Agent Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/rag-agent/index/{pdf_id}` | POST | Index a PDF for RAG queries |
+| `/rag-agent/index/{pdf_id}/status` | GET | Check indexing status |
+| `/rag-agent/ask` | POST | Ask a question about a PDF |
+| `/rag-agent/visualize` | POST | Generate visualization for a question |
+| `/rag-agent/cache/stats` | GET | View cache statistics |
+| `/rag-agent/cache/{pdf_id}` | DELETE | Clear cache for a PDF |
+
+### Example Usage
+
+1. **Index a PDF**:
+   ```bash
+   curl -X POST "https://your-app.run.app/rag-agent/index/abc123" \
+     -H "Authorization: Bearer YOUR_TOKEN"
+   ```
+
+2. **Ask a Question**:
+   ```bash
+   curl -X POST "https://your-app.run.app/rag-agent/ask" \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "pdf_id": "abc123",
+       "question": "What is the quadratic formula?",
+       "student_mode": "average",
+       "include_visualization": true
+     }'
+   ```
+
+3. **Response Example**:
+   ```json
+   {
+     "question": "What is the quadratic formula?",
+     "question_type": "factual",
+     "answer": "The quadratic formula is x = (-b ± √(b²-4ac)) / 2a...",
+     "citations": [
+       {
+         "chunk_id": 5,
+         "content": "For any quadratic equation ax² + bx + c = 0...",
+         "page_number": 3,
+         "score": 0.95
+       }
+     ],
+     "visualization": {
+       "type": "formula_breakdown",
+       "title": "Quadratic Formula Components",
+       "data": {...}
+     },
+     "student_mode": "average",
+     "cached": false
+   }
+   ```
+
+### Student Mode Adaptation
+
+The RAG Agent adapts responses based on student mode:
+
+| Mode | Answer Style | Visualization Style |
+|------|--------------|---------------------|
+| **Dull** | Simple language, step-by-step, real-world examples | High contrast, slow animations, concrete metaphors |
+| **Average** | Balanced explanation, procedural focus | Standard colors, medium complexity |
+| **Clever** | Concise, mathematical notation, advanced concepts | Abstract, complex, sandbox mode |
+
+### Frontend Integration
+
+The RAG Agent UI is available in the frontend at `/rag-agent`. Students can:
+- Select a processed PDF
+- Choose their learning mode
+- Ask questions in natural language
+- View answers with citations
+- See AI-generated visualizations
+
+### Cache Management
+
+To minimize costs, the RAG Agent caches:
+- **Processed PDFs**: Text extraction and indexing (never re-process same PDF)
+- **Retrieval Results**: Same question returns cached chunks
+- **Final Answers**: Same question + mode returns cached answer
+- **Visualizations**: Same question + mode returns cached visualization
+
+Check cache stats:
+```bash
+curl "https://your-app.run.app/rag-agent/cache/stats" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+Clear cache for a PDF (if content changed):
+```bash
+curl -X DELETE "https://your-app.run.app/rag-agent/cache/abc123" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
 
 ---
 

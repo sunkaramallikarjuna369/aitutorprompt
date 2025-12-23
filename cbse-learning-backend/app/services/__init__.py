@@ -8,6 +8,8 @@ from .quiz.router import router as quiz_router
 from .progress.router import router as progress_router
 from .recommendation.router import router as recommendation_router
 from .pdf_ingestion.router import router as pdf_ingestion_router
+from .rag_agent.router import router as rag_agent_router
+from .firebase_users.router import router as firebase_users_router
 
 __all__ = [
     "auth_router",
@@ -19,5 +21,7 @@ __all__ = [
     "quiz_router",
     "progress_router",
     "recommendation_router",
-    "pdf_ingestion_router"
+    "pdf_ingestion_router",
+    "rag_agent_router",
+    "firebase_users_router"
 ]

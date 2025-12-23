@@ -53,6 +53,15 @@ class AIProvider(ABC):
         student_mode: StudentMode
     ) -> Dict[str, Any]:
         pass
+    
+    @abstractmethod
+    async def generate_text(
+        self,
+        prompt: str,
+        max_tokens: int = 1000
+    ) -> str:
+        """Generate text response for RAG and general queries."""
+        pass
 
 
 class MockAIProvider(AIProvider):
@@ -540,6 +549,105 @@ class MockAIProvider(AIProvider):
                     "discriminant": "Δ = 144 - 84 = 60 > 0, two distinct real roots"
                 }
             }
+    
+    async def generate_text(
+        self,
+        prompt: str,
+        max_tokens: int = 1000
+    ) -> str:
+        """Generate text response for RAG and general queries (Mock implementation)."""
+        logger.info(f"MockAIProvider: Generating text response (prompt length: {len(prompt)})")
+        
+        # Extract key information from the prompt to generate a contextual response
+        prompt_lower = prompt.lower()
+        
+        # Check for question types and generate appropriate mock responses
+        if "quadratic" in prompt_lower:
+            if "solve" in prompt_lower or "root" in prompt_lower:
+                return """To solve a quadratic equation ax² + bx + c = 0, you can use several methods:
+
+1. **Factorization**: If the equation can be factored, write it as (px + q)(rx + s) = 0 and solve for x.
+
+2. **Quadratic Formula**: x = (-b ± √(b² - 4ac)) / 2a
+   - This works for all quadratic equations
+   - The discriminant (b² - 4ac) tells us about the nature of roots
+
+3. **Completing the Square**: Rewrite the equation in the form (x + p)² = q
+
+The discriminant determines the nature of roots:
+- If b² - 4ac > 0: Two distinct real roots
+- If b² - 4ac = 0: One repeated real root
+- If b² - 4ac < 0: Two complex conjugate roots
+
+Remember to always check your answers by substituting back into the original equation!"""
+            
+            elif "graph" in prompt_lower or "parabola" in prompt_lower:
+                return """A quadratic function y = ax² + bx + c produces a parabola when graphed:
+
+**Key Features:**
+1. **Vertex**: The turning point at x = -b/(2a), y = f(-b/(2a))
+2. **Axis of Symmetry**: The vertical line x = -b/(2a)
+3. **Direction**: Opens upward if a > 0, downward if a < 0
+4. **Y-intercept**: The point (0, c)
+5. **X-intercepts (roots)**: Where the parabola crosses the x-axis
+
+**How coefficients affect the graph:**
+- 'a' controls the width and direction (larger |a| = narrower parabola)
+- 'b' shifts the vertex horizontally
+- 'c' shifts the parabola vertically
+
+Try adjusting the sliders in the visualization to see these effects in real-time!"""
+            
+            else:
+                return """Quadratic equations are polynomial equations of degree 2, written in the standard form:
+
+**ax² + bx + c = 0** (where a ≠ 0)
+
+**Key Concepts:**
+1. The coefficient 'a' determines if the parabola opens up or down
+2. The discriminant (b² - 4ac) determines the nature of roots
+3. The vertex form y = a(x-h)² + k shows the vertex at (h, k)
+
+**Applications:**
+- Projectile motion (ball trajectories)
+- Area optimization problems
+- Revenue and profit calculations
+- Bridge and arch design
+
+Quadratic equations appear everywhere in science and engineering!"""
+        
+        elif "discriminant" in prompt_lower:
+            return """The discriminant is a key value in quadratic equations: **Δ = b² - 4ac**
+
+**What it tells us:**
+1. **Δ > 0**: Two distinct real roots
+   - The parabola crosses the x-axis at two points
+   
+2. **Δ = 0**: One repeated real root (double root)
+   - The parabola touches the x-axis at exactly one point (vertex)
+   
+3. **Δ < 0**: No real roots (two complex conjugate roots)
+   - The parabola doesn't cross the x-axis
+   - Roots are of the form: x = (-b ± i√|Δ|) / 2a
+
+The discriminant is useful for quickly determining the nature of solutions without fully solving the equation."""
+        
+        else:
+            # Generic educational response
+            return """Based on the textbook content, here's what you need to know:
+
+**Key Points:**
+1. Mathematical concepts build upon each other - make sure you understand the fundamentals
+2. Practice with different types of problems to strengthen your understanding
+3. Real-world applications help connect abstract concepts to practical uses
+
+**Study Tips:**
+- Work through examples step by step
+- Try to solve problems before looking at solutions
+- Use visualizations to build intuition
+- Connect new concepts to what you already know
+
+If you have a specific question, feel free to ask for more detailed explanation!"""
 
 
 class VertexAIProvider(AIProvider):
@@ -716,6 +824,20 @@ class VertexAIProvider(AIProvider):
             logger.error(f"VertexAI worked example generation failed, falling back to mock: {e}")
             mock_provider = MockAIProvider()
             return await mock_provider.generate_worked_example(topic_id, problem, student_mode)
+    
+    async def generate_text(
+        self,
+        prompt: str,
+        max_tokens: int = 1000
+    ) -> str:
+        """Generate text response for RAG and general queries using Vertex AI."""
+        try:
+            response_text = await self._generate_content(prompt)
+            return response_text
+        except Exception as e:
+            logger.error(f"VertexAI text generation failed, falling back to mock: {e}")
+            mock_provider = MockAIProvider()
+            return await mock_provider.generate_text(prompt, max_tokens)
 
 
 def get_ai_provider() -> AIProvider:

@@ -747,3 +747,76 @@ export const pdfIngestionApi = {
   getNCERTInfo: () =>
     apiRequest<NCERTInfo>('/pdf-ingestion/ncert-info'),
 };
+
+// RAG Agent Types
+export type QuestionType = 'factual' | 'conceptual' | 'procedural' | 'application' | 'exercise';
+
+export interface ChunkInfo {
+  chunk_id: number;
+  content: string;
+  page_number: number | null;
+  score: number;
+}
+
+export interface RAGVisualizationConfig {
+  type: string;
+  title: string;
+  description: string;
+  data: Record<string, unknown>;
+  student_mode: StudentMode;
+  pedagogical_notes: string[];
+}
+
+export interface AskQuestionRequest {
+  pdf_id: string;
+  question: string;
+  student_mode?: StudentMode;
+  include_visualization?: boolean;
+  max_chunks?: number;
+}
+
+export interface AskQuestionResponse {
+  question: string;
+  question_type: QuestionType;
+  answer: string;
+  citations: ChunkInfo[];
+  visualization: RAGVisualizationConfig | null;
+  student_mode: StudentMode;
+  cached: boolean;
+  pdf_id: string;
+}
+
+export interface IndexStatusResponse {
+  pdf_id: string;
+  indexed: boolean;
+  chunk_count: number;
+  last_indexed: string | null;
+}
+
+export interface RAGCacheStats {
+  answer_cache_size: number;
+  visualization_cache_size: number;
+  cache_directory: string;
+  indexed_pdfs: number;
+}
+
+// RAG Agent API
+export const ragAgentApi = {
+  indexPdf: (pdfId: string) =>
+    apiRequest<IndexStatusResponse>(`/rag-agent/index/${pdfId}`, { method: 'POST' }),
+
+  getIndexStatus: (pdfId: string) =>
+    apiRequest<IndexStatusResponse>(`/rag-agent/index/${pdfId}/status`),
+
+  askQuestion: (data: AskQuestionRequest) =>
+    apiRequest<AskQuestionResponse>('/rag-agent/ask', { method: 'POST', body: data }),
+
+  generateVisualization: (pdfId: string, question: string, studentMode?: StudentMode) =>
+    apiRequest<RAGVisualizationConfig>(`/rag-agent/visualize?pdf_id=${pdfId}&question=${encodeURIComponent(question)}${studentMode ? `&student_mode=${studentMode}` : ''}`, { method: 'POST' }),
+
+  getCacheStats: () =>
+    apiRequest<RAGCacheStats>('/rag-agent/cache/stats'),
+
+  clearPdfCache: (pdfId: string) =>
+    apiRequest<{ message: string; deleted_answers: number }>(`/rag-agent/cache/${pdfId}`, { method: 'DELETE' }),
+};
