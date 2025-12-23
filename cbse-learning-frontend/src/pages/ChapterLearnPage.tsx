@@ -5,9 +5,11 @@ import {
   curriculumApi, 
   contentApi, 
   progressApi,
+  authApi,
   ChapterWithTopics, 
   TopicContent,
-  SGTFlow
+  SGTFlow,
+  StudentMode
 } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -18,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import QuadraticVisualizer from '../components/learning/QuadraticVisualizer';
 import RealWorldPanel from '../components/learning/RealWorldPanel';
 import ContentViewer from '../components/learning/ContentViewer';
+import StudentModeSelector from '../components/learning/StudentModeSelector';
 import { 
   BookOpen, 
   ChevronLeft, 
@@ -29,13 +32,14 @@ import {
   PlayCircle,
   FileQuestion,
   Home,
-  BarChart3
+  BarChart3,
+  Sparkles
 } from 'lucide-react';
 
 export default function ChapterLearnPage() {
   const { chapterId } = useParams<{ chapterId: string }>();
   const navigate = useNavigate();
-  const { } = useAuth();
+  const { user } = useAuth();
   
   const [chapter, setChapter] = useState<ChapterWithTopics | null>(null);
   const [sgtFlow, setSgtFlow] = useState<SGTFlow | null>(null);
@@ -44,6 +48,16 @@ export default function ChapterLearnPage() {
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [startTime, setStartTime] = useState<number>(Date.now());
+  const [studentMode, setStudentMode] = useState<StudentMode>(user?.student_mode || 'average');
+
+  const handleModeChange = async (mode: StudentMode) => {
+    setStudentMode(mode);
+    try {
+      await authApi.updateProfile({ student_mode: mode });
+    } catch (error) {
+      console.error('Failed to update student mode:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchChapter = async () => {
@@ -334,7 +348,10 @@ export default function ChapterLearnPage() {
                   </TabsContent>
 
                   <TabsContent value="visualize" className="mt-4">
-                    <QuadraticVisualizer />
+                    <QuadraticVisualizer 
+                      studentMode={studentMode} 
+                      topicId={selectedTopicId || 'qe-graphical'} 
+                    />
                   </TabsContent>
 
                   <TabsContent value="realworld" className="mt-4">
@@ -375,6 +392,24 @@ export default function ChapterLearnPage() {
         </main>
 
         <aside className="w-72 bg-white border-l overflow-hidden flex flex-col">
+          <div className="p-4 border-b">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+              Learning Mode
+            </h2>
+          </div>
+          <div className="p-4 border-b">
+            <StudentModeSelector 
+              currentMode={studentMode} 
+              onModeChange={handleModeChange}
+              compact={true}
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              {studentMode === 'dull' && 'Simplified visuals with real-world metaphors'}
+              {studentMode === 'average' && 'Balanced procedural visualizations'}
+              {studentMode === 'clever' && 'Complex abstract visualizations'}
+            </p>
+          </div>
           <div className="p-4 border-b">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-indigo-600" />

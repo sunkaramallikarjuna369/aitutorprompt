@@ -14,6 +14,7 @@ class RegisterRequest(BaseModel):
     name: str
     class_id: str = "class-10"
     school: Optional[str] = None
+    student_mode: str = "average"
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -28,6 +29,7 @@ class ProfileUpdateRequest(BaseModel):
     name: Optional[str] = None
     school: Optional[str] = None
     learning_style: Optional[str] = None
+    student_mode: Optional[str] = None
     pace: Optional[str] = None
 
 @router.post("/register", response_model=TokenResponse)
@@ -45,7 +47,8 @@ async def register(request: RegisterRequest):
         password_hash=password_hash,
         name=request.name,
         class_id=request.class_id,
-        school=request.school
+        school=request.school,
+        student_mode=request.student_mode
     )
     
     access_token = create_access_token(

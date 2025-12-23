@@ -6,6 +6,7 @@ from .services import (
     curriculum_router,
     content_router,
     visualization_router,
+    visualization_orchestrator_router,
     rwal_router,
     quiz_router,
     progress_router,
@@ -33,6 +34,7 @@ app.include_router(auth_router)
 app.include_router(curriculum_router)
 app.include_router(content_router)
 app.include_router(visualization_router)
+app.include_router(visualization_orchestrator_router)
 app.include_router(rwal_router)
 app.include_router(quiz_router)
 app.include_router(progress_router)
@@ -48,14 +50,15 @@ async def root():
         "message": "Welcome to CBSE Learning Platform API",
         "version": settings.APP_VERSION,
         "docs": "/docs",
-        "services": [
-            {"name": "Authentication", "prefix": "/auth"},
-            {"name": "Curriculum", "prefix": "/curriculum"},
-            {"name": "Content", "prefix": "/content"},
-            {"name": "Visualization", "prefix": "/visualization"},
-            {"name": "Real-World Applications (SGT)", "prefix": "/rwal"},
-            {"name": "Quiz & Assessment", "prefix": "/quiz"},
-            {"name": "Progress Tracking", "prefix": "/progress"},
-            {"name": "Recommendations", "prefix": "/recommendations"}
-        ]
+                "services": [
+                    {"name": "Authentication", "prefix": "/auth"},
+                    {"name": "Curriculum", "prefix": "/curriculum"},
+                    {"name": "Content", "prefix": "/content"},
+                    {"name": "Visualization", "prefix": "/visualization"},
+                    {"name": "Visualization Orchestrator (AI-Driven)", "prefix": "/visualization-orchestrator"},
+                    {"name": "Real-World Applications (SGT)", "prefix": "/rwal"},
+                    {"name": "Quiz & Assessment", "prefix": "/quiz"},
+                    {"name": "Progress Tracking", "prefix": "/progress"},
+                    {"name": "Recommendations", "prefix": "/recommendations"}
+                ]
     }
