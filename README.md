@@ -260,15 +260,35 @@ The platform includes comprehensive seed data for:
 
 ## GCP Deployment
 
-The platform includes Terraform and Cloud Build configurations for one-click deployment to Google Cloud Platform.
+The platform includes multiple deployment options for different budgets and skill levels.
 
-### Prerequisites
+### Quick Start: Low-Budget Deployment (Recommended for Beginners)
+
+**Budget: 1000 INR/month (~$12 USD) or FREE using GCP free tier**
+
+If you're new to GCP or have a limited budget, start here:
+
+1. **[Low-Budget Deployment Guide](docs/LOW_BUDGET_DEPLOYMENT_GUIDE.md)** - Step-by-step instructions for complete beginners
+2. **[Cost Optimization Guide](docs/COST_OPTIMIZATION.md)** - Tips to minimize costs and stay within budget
+3. **[Budget Estimate](docs/BUDGET_ESTIMATE.md)** - Detailed cost breakdown for different scales
+
+The low-budget approach uses:
+- Single Cloud Run service (scales to zero = no cost when idle)
+- In-memory database (for demos) or Firestore (for persistence)
+- Mock AI provider (no Vertex AI costs)
+- Simplified CI/CD with Cloud Build
+
+### Full Production Deployment
+
+For larger deployments with more features, use the Terraform configuration:
+
+#### Prerequisites
 
 - GCP Project with billing enabled
 - Terraform 1.0+
 - gcloud CLI configured
 
-### Infrastructure Setup
+#### Infrastructure Setup
 
 ```bash
 cd infra/terraform
